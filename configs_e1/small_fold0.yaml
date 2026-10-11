@@ -1,0 +1,28 @@
+# E1: REWI-Small (blconv_s + bilstm_s), writer-independent fold 0. Copy of rewi/configs/train.yaml with 6 changes.
+arch_de: bilstm_s
+arch_en: blconv_s
+aug: true # whether to perform data augmentation for train set
+cache: true # whether to cache the whole dataset into rams
+checkpoint: null # path to checkpoint to load
+ctc_decoder: best_path
+device: cuda
+dir_dataset: /content/onhw_wi_word_rh
+dir_work: /content/drive/MyDrive/onhw/results/blconv_s__wi_fold0
+epoch: 300
+epoch_warmup: 30
+freeze: false # whether to freeze the encoder
+freq_eval: 5 # frequency (epoch) to evaulate model performance on val set
+freq_log: 300 # frequency (iteration) to log information
+freq_save: 5 # frequency (epoch) to save model checkpoint
+idx_fold: 0 # cross validation fold index. 0 for non-cross validation. -1 for train for all cross-validation folds automatically
+len_seq: 0
+lr: 0.001
+num_channel: 13
+num_worker: 2
+seed: 42
+size_batch: 64
+test: false
+
+categories: ["", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "Ä", "Ö", "Ü", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "ä", "ö", "ü", "ß"] # including seperation label "" for CTC
+# categories: ["", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "ä", "ö", "ü", "Ä", "Ö", "Ü", "ß", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", ",", "(",")", "'", "?", "!", "+", "=", "-", "/", ";", ":", "·", " "]
+ 

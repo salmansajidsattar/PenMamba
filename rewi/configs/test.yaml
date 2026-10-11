@@ -1,0 +1,22 @@
+arch_de: bilstm_b
+arch_en: blconv_b
+aug: true # whether to perform data augmentation for train set
+cache: false # whether to cache the whole dataset into rams
+checkpoint: ../results/hwr2/blconv/blconv_b__wi_word_hw6_meta_adult/0/checkpoints/299.pth # path to checkpoint to load
+ctc_decoder: best_path
+device: cuda
+dir_dataset: ../data/wi_word_hw6_meta
+dir_work: ../results/hwr2/blconv/convnext__wi_word_hw6_meta_adult2child/0
+epoch: 1
+freq_eval: 1 # frequency (epoch) to evaulate model performance on val set
+freq_log: 300 # frequency (iteration) to log information
+idx_fold: -1 # cross validation fold index. 0 for non-cross validation. -1 for train for all cross-validation folds automatically
+len_seq: 0
+num_channel: 13
+num_worker: 16
+seed: 42
+size_batch: 64
+test: true
+
+categories: ["", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "Ä", "Ö", "Ü", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "ä", "ö", "ü", "ß"] # including seperation label for CTC
+# categories: ["", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "ä", "ö", "ü", "Ä", "Ö", "Ü", "ß", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", ",", "(",")", "'", "?", "!", "+", "=", "-", "/", ";", ":", "·", " "]
