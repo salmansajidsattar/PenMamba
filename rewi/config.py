@@ -23,9 +23,10 @@ else:  # Colab
 # ---- experiment ----
 SPLIT = "wi"            # wi = writer-independent, wd = writer-dependent
 FOLD = 0
-RUN_NAME = f"{SPLIT}_fold{FOLD}"
+NUM_FOLD = 5
 ARCH_EN = "blconv_s"    # REWI-Small encoder
 ARCH_DE = "bilstm_s"    # REWI-Small decoder
+RUN_NAME = f"{ARCH_EN}_{SPLIT}"   # results go to RESULTS_DIR/RUN_NAME/<fold>/
 
 # ---- training (REWI-Small recipe) ----
 EPOCH = 300
@@ -47,7 +48,7 @@ NUM_CHANNEL = 13
 CATEGORIES = [""] + list("ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜabcdefghijklmnopqrstuvwxyzäöüß")
 
 
-def make_cfg(epoch=EPOCH, epoch_warmup=EPOCH_WARMUP, work_dir=None):
+def make_cfg(epoch=EPOCH, epoch_warmup=EPOCH_WARMUP, work_dir=None, fold=FOLD):
     """Return the settings dict in the form REWI's main.py expects."""
     if work_dir is None:
         work_dir = os.path.join(RESULTS_DIR, RUN_NAME)
@@ -68,7 +69,7 @@ def make_cfg(epoch=EPOCH, epoch_warmup=EPOCH_WARMUP, work_dir=None):
         "freq_eval": FREQ_EVAL,
         "freq_log": FREQ_LOG,
         "freq_save": FREQ_SAVE,
-        "idx_fold": FOLD,
+        "idx_fold": fold,
         "len_seq": 0,
         "lr": LR,
         "num_channel": NUM_CHANNEL,
@@ -79,8 +80,8 @@ def make_cfg(epoch=EPOCH, epoch_warmup=EPOCH_WARMUP, work_dir=None):
     }
 
 
-def get_cfg(run="e1"):
-    """run = "e1" (real run) or "test" (2-epoch speed test)."""
+def get_cfg(run="e1", fold=FOLD):
+    """run = "e1" (real run) or "test" (2-epoch speed test); fold = 0..4."""
     if run == "test":
-        return make_cfg(TEST_EPOCH, TEST_EPOCH_WARMUP, TEST_WORK_DIR)
-    return make_cfg()
+        return make_cfg(TEST_EPOCH, TEST_EPOCH_WARMUP, TEST_WORK_DIR, fold)
+    return make_cfg(fold=fold)

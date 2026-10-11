@@ -60,7 +60,7 @@ if __name__ == "__main__":
     p.add_argument("--data-root", default=config.RAW_DIR)
     p.add_argument("--out", default=config.CONVERTED_DIR)
     p.add_argument("--split", default=config.SPLIT)
-    p.add_argument("--folds", type=int, nargs="+", default=[config.FOLD])
+    p.add_argument("--folds", type=int, nargs="+", default=list(range(config.NUM_FOLD)))
     p.add_argument("--limit", type=int, default=0, help="samples per part, for a quick test")
     a = p.parse_args()
     data.DATA_ROOT = a.data_root

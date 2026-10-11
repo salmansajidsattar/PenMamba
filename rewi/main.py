@@ -299,12 +299,18 @@ if __name__ == '__main__':
         default='e1',
         help='Which settings of config.py to use when no YAML is given.',
     )
+    parser.add_argument(
+        '--fold',
+        type=int,
+        default=config.FOLD,
+        help='Fold index 0-4 when no YAML is given.',
+    )
     args = parser.parse_args()
 
     if args.config:
         with open(args.config, 'r') as f:
             cfgs = yaml.safe_load(f)
     else:
-        cfgs = config.get_cfg(args.run)
+        cfgs = config.get_cfg(args.run, args.fold)
 
     main(argparse.Namespace(**cfgs))
