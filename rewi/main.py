@@ -10,6 +10,7 @@ from torch.amp import GradScaler
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
 from torch.utils.data import DataLoader
 
+import config
 from rewi.ctc_decoder import BestPath
 from rewi.dataset import HRDataset
 from rewi.dataset.utils import fn_collate
@@ -288,13 +289,22 @@ if __name__ == '__main__':
         description='Run handwriting recognition model.'
     )
     parser.add_argument(
-        '-c', '--config', help='Path to YAML file of configuration.'
+        '-c',
+        '--config',
+        help='Optional YAML file. If not given, values come from config.py.',
+    )
+    parser.add_argument(
+        '--run',
+        choices=['e1', 'test'],
+        default='e1',
+        help='Which settings of config.py to use when no YAML is given.',
     )
     args = parser.parse_args()
-    # args.config = 'configs/train.yaml'
 
-    with open(args.config, 'r') as f:
-        cfgs = yaml.safe_load(f)
-        cfgs = argparse.Namespace(**cfgs)
+    if args.config:
+        with open(args.config, 'r') as f:
+            cfgs = yaml.safe_load(f)
+    else:
+        cfgs = config.get_cfg(args.run)
 
-    main(cfgs)
+    main(argparse.Namespace(**cfgs))

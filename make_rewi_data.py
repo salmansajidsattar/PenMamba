@@ -5,8 +5,12 @@ Run: python make_rewi_data.py --data-root DIR --out DIR [--folds 0 1] [--limit 3
 import argparse
 import json
 import os
+import sys
 
 import numpy as np
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "rewi"))
+import config  # noqa: E402
 
 import data
 
@@ -53,10 +57,10 @@ def write_json(split, folds, part, out_dir, limit):
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("--data-root", default=data.DATA_ROOT)
-    p.add_argument("--out", required=True)
-    p.add_argument("--split", default="wi")
-    p.add_argument("--folds", type=int, nargs="+", default=[0])
+    p.add_argument("--data-root", default=config.RAW_DIR)
+    p.add_argument("--out", default=config.CONVERTED_DIR)
+    p.add_argument("--split", default=config.SPLIT)
+    p.add_argument("--folds", type=int, nargs="+", default=[config.FOLD])
     p.add_argument("--limit", type=int, default=0, help="samples per part, for a quick test")
     a = p.parse_args()
     data.DATA_ROOT = a.data_root
