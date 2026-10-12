@@ -1,7 +1,7 @@
 """Small pure-PyTorch Mamba (selective state space) block and the BiMamba + BiLSTM decoder.
 
-No mamba-ssm install is needed. The scan is a plain loop over time, which is fine
-here because the encoder output is short (at most 1024 // 8 = 128 steps).
+No mamba-ssm install is needed. The scan is a doubling (parallel) scan, so it needs only
+about log2(len) steps (len is at most 1024 // 8 = 128).
 """
 import math
 
@@ -12,8 +12,32 @@ import torch.nn.functional as F
 __all__ = ['MambaBlock', 'MambaLSTM']
 
 
+def parallel_scan(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+    '''Solve h_t = a_t * h_{t-1} + b_t (h_-1 = 0) for all t at once.
+
+    Doubling scan: about log2(len) steps instead of len steps. Only products of
+    values in (0, 1] are used, so it stays stable.
+
+    Args:
+        a (torch.Tensor): Decay (b, l, d, n).
+        b (torch.Tensor): Input (b, l, d, n).
+
+    Returns:
+        torch.Tensor: h (b, l, d, n).
+    '''
+    l = a.shape[1]
+    k = 1
+
+    while k < l:
+        b = torch.cat([b[:, :k], a[:, k:] * b[:, :-k] + b[:, k:]], dim=1)
+        a = torch.cat([a[:, :k], a[:, k:] * a[:, :-k]], dim=1)
+        k *= 2
+
+    return b
+
+
 def selective_scan(u, dt, A, B, C, D):
-    '''Sequential selective scan, always in float32.
+    '''Selective scan, always in float32.
 
     Args:
         u (torch.Tensor): Input (b, l, d).
@@ -27,17 +51,12 @@ def selective_scan(u, dt, A, B, C, D):
         torch.Tensor: Output (b, l, d).
     '''
     u, dt, B, C = u.float(), dt.float(), B.float(), C.float()
-    b, l, d = u.shape
     dA = torch.exp(dt.unsqueeze(-1) * A)  # (b, l, d, n)
     dBu = dt.unsqueeze(-1) * B.unsqueeze(2) * u.unsqueeze(-1)  # (b, l, d, n)
-    h = u.new_zeros(b, d, A.shape[1])
-    ys = []
+    h = parallel_scan(dA, dBu)
+    y = (h * C.unsqueeze(2)).sum(-1)
 
-    for t in range(l):
-        h = dA[:, t] * h + dBu[:, t]
-        ys.append((h * C[:, t].unsqueeze(1)).sum(-1))
-
-    return torch.stack(ys, 1) + u * D
+    return y + u * D
 
 
 class MambaBlock(nn.Module):
