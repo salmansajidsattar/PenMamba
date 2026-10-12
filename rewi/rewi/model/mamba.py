@@ -132,13 +132,15 @@ class MambaLSTM(nn.Module):
         d_model: int = 64,
         hidden_size: int = 64,
         r_drop: float = 0.2,
+        d_state: int = 8,
+        expand: int = 1,
     ) -> None:
         super().__init__()
 
         self.proj = nn.Linear(size_in, d_model)
         self.norm = nn.LayerNorm(d_model)
-        self.fwd = MambaBlock(d_model)
-        self.bwd = MambaBlock(d_model)
+        self.fwd = MambaBlock(d_model, d_state, expand=expand)
+        self.bwd = MambaBlock(d_model, d_state, expand=expand)
         self.drop = nn.Dropout(r_drop)
         self.lstm = nn.LSTM(
             d_model, hidden_size, 1, batch_first=True, bidirectional=True
