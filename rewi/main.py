@@ -24,6 +24,14 @@ from rewi.visualize import visualize
 warnings.filterwarnings('ignore', category=UserWarning)
 
 
+class DataParallelModel(nn.DataParallel):
+    '''nn.DataParallel that still exposes ratio_ds of the wrapped model.'''
+
+    @property
+    def ratio_ds(self) -> int:
+        return self.module.ratio_ds
+
+
 def train_one_epoch(
     dataloader: DataLoader,
     model: BaseModel,
@@ -74,7 +82,7 @@ def train_one_epoch(
     # save checkpoints every freq_save epoch
     if man.check_step(epoch + 1, 'save'):
         man.save_checkpoint(
-            model.state_dict(),
+            getattr(model, 'module', model).state_dict(),
             optimizer.state_dict(),
             lr_scheduler.state_dict(),
         )
@@ -248,6 +256,11 @@ def main(cfgs: argparse.Namespace) -> None:
 
         logger.info(f'Load checkpoint from {cfgs.checkpoint}')
 
+    # use all GPUs for each batch if asked
+    if getattr(cfgs, 'multi_gpu', False) and torch.cuda.device_count() > 1:
+        model = DataParallelModel(model)
+        logger.info(f'Using {torch.cuda.device_count()} GPUs (DataParallel)')
+
     # start running
     for e in range(epoch_start, cfgs.epoch):
         if cfgs.test:
@@ -305,12 +318,33 @@ if __name__ == '__main__':
         default=config.FOLD,
         help='Fold index 0-4 when no YAML is given.',
     )
+    parser.add_argument(
+        '--arch-de',
+        default=None,
+        help='Decoder name, e.g. bilstm_s or mambalstm_s (default: config.py).',
+    )
+    parser.add_argument(
+        '--device',
+        default=None,
+        help='cuda, cuda:0 or cuda:1 (default: config.py).',
+    )
+    parser.add_argument(
+        '--multi-gpu',
+        action='store_true',
+        help='Split every batch over all GPUs.',
+    )
     args = parser.parse_args()
 
     if args.config:
         with open(args.config, 'r') as f:
             cfgs = yaml.safe_load(f)
     else:
-        cfgs = config.get_cfg(args.run, args.fold)
+        cfgs = config.get_cfg(
+            args.run,
+            args.fold,
+            args.arch_de,
+            args.device,
+            True if args.multi_gpu else None,
+        )
 
     main(argparse.Namespace(**cfgs))

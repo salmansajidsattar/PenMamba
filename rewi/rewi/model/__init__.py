@@ -4,6 +4,7 @@ import torch.nn as nn
 from .ablation import AblaDec, AblaEnc
 from .conv import BLConv
 from .lstm import LSTM
+from .mamba import MambaLSTM
 from .others.convnext import ConvNeXt
 from .others.mlp_mixer import MLPMixer
 from .others.resnet import ResNet
@@ -74,6 +75,8 @@ def build_decoder(
             return LSTM(dim_in, num_cls)
         case 'bilstm_s':
             return LSTM(dim_in, num_cls, 64, 2)
+        case 'mambalstm_s':
+            return MambaLSTM(dim_in, num_cls)
         case 'cldnn':
             return CLDNNDec(dim_in, num_cls)
         case 'ott':
