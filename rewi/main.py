@@ -319,6 +319,11 @@ if __name__ == '__main__':
         help='Fold index 0-4 when no YAML is given.',
     )
     parser.add_argument(
+        '--arch-en',
+        default=None,
+        help='Encoder name, e.g. blconv_s or blconv_s_groups (default: config.py).',
+    )
+    parser.add_argument(
         '--arch-de',
         default=None,
         help='Decoder name, e.g. bilstm_s or mambalstm_s (default: config.py).',
@@ -345,6 +350,7 @@ if __name__ == '__main__':
             args.arch_de,
             args.device,
             True if args.multi_gpu else None,
+            args.arch_en,
         )
 
     main(argparse.Namespace(**cfgs))

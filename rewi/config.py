@@ -30,11 +30,11 @@ DEVICE = "cuda"         # "cuda:0" / "cuda:1" to pick a GPU
 MULTI_GPU = False       # True = split each batch over all GPUs (nn.DataParallel)
 
 
-def run_name(arch_de=ARCH_DE):
+def run_name(arch_en=ARCH_EN, arch_de=ARCH_DE):
     """Results go to RESULTS_DIR/<run_name>/<fold>/. The baseline keeps its old name."""
     if arch_de == "bilstm_s":
-        return f"{ARCH_EN}_{SPLIT}"
-    return f"{ARCH_EN}_{arch_de}_{SPLIT}"
+        return f"{arch_en}_{SPLIT}"
+    return f"{arch_en}_{arch_de}_{SPLIT}"
 
 
 # ---- training (REWI-Small recipe) ----
@@ -58,13 +58,13 @@ CATEGORIES = [""] + list("ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜabcdefghijklmnopqrstuv
 
 
 def make_cfg(epoch=EPOCH, epoch_warmup=EPOCH_WARMUP, work_dir=None, fold=FOLD,
-             arch_de=ARCH_DE, device=DEVICE, multi_gpu=MULTI_GPU):
+             arch_en=ARCH_EN, arch_de=ARCH_DE, device=DEVICE, multi_gpu=MULTI_GPU):
     """Return the settings dict in the form REWI's main.py expects."""
     if work_dir is None:
-        work_dir = os.path.join(RESULTS_DIR, run_name(arch_de))
+        work_dir = os.path.join(RESULTS_DIR, run_name(arch_en, arch_de))
     return {
         "arch_de": arch_de,
-        "arch_en": ARCH_EN,
+        "arch_en": arch_en,
         "aug": True,
         "cache": True,
         "categories": CATEGORIES,
@@ -91,10 +91,11 @@ def make_cfg(epoch=EPOCH, epoch_warmup=EPOCH_WARMUP, work_dir=None, fold=FOLD,
     }
 
 
-def get_cfg(run="e1", fold=FOLD, arch_de=None, device=None, multi_gpu=None):
+def get_cfg(run="e1", fold=FOLD, arch_de=None, device=None, multi_gpu=None, arch_en=None):
     """run = "e1" (real run) or "test" (2-epoch speed test); fold = 0..4.
-    arch_de, device, multi_gpu: override the defaults above (None = keep default)."""
+    arch_en, arch_de, device, multi_gpu: override the defaults above (None = keep default)."""
     extra = {
+        "arch_en": arch_en or ARCH_EN,
         "arch_de": arch_de or ARCH_DE,
         "device": device or DEVICE,
         "multi_gpu": MULTI_GPU if multi_gpu is None else multi_gpu,

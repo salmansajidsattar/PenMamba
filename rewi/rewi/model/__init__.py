@@ -3,6 +3,7 @@ import torch.nn as nn
 
 from .ablation import AblaDec, AblaEnc
 from .conv import BLConv
+from .groups import GroupBLConv
 from .lstm import LSTM
 from .mamba import MambaLSTM
 from .others.convnext import ConvNeXt
@@ -30,6 +31,10 @@ def build_encoder(in_chan: int, arch: str, len_seq: int = 0) -> nn.Module:
             return BLConv(in_chan)
         case 'blconv_s':
             return BLConv(in_chan, [1, 1, 1], [64, 128, 256])
+        case 'blconv_s_groups':
+            return GroupBLConv(in_chan, [1, 1, 1], [64, 128, 256], True)
+        case 'blconv_s_groups_fixed':
+            return GroupBLConv(in_chan, [1, 1, 1], [64, 128, 256], False)
         case 'cldnn':
             return CLDNNEnc(in_chan)
         case 'ott':
