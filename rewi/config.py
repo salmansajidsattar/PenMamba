@@ -30,11 +30,15 @@ DEVICE = "cuda"         # "cuda:0" / "cuda:1" to pick a GPU
 MULTI_GPU = False       # True = split each batch over all GPUs (nn.DataParallel)
 
 
-def run_name(arch_en=ARCH_EN, arch_de=ARCH_DE):
+def run_name(arch_en=ARCH_EN, arch_de=ARCH_DE, kd=False):
     """Results go to RESULTS_DIR/<run_name>/<fold>/. The baseline keeps its old name."""
-    if arch_de == "bilstm_s":
-        return f"{arch_en}_{SPLIT}"
-    return f"{arch_en}_{arch_de}_{SPLIT}"
+    parts = [arch_en]
+    if arch_de != "bilstm_s":
+        parts.append(arch_de)
+    if kd:
+        parts.append("kd")
+    parts.append(SPLIT)
+    return "_".join(parts)
 
 
 # ---- training (REWI-Small recipe) ----
@@ -47,6 +51,12 @@ FREQ_EVAL = 5
 FREQ_SAVE = 5
 FREQ_LOG = 300
 
+# ---- knowledge distillation (Base teacher -> Small student) ----
+TEACHER_ARCH_EN = "blconv_b"
+TEACHER_ARCH_DE = "bilstm_b"
+TEACHER_EPOCH = 299     # last epoch, so we do not pick a checkpoint by validation score
+KD_WEIGHT = 1.0         # loss = CTC + KD_WEIGHT * KL(teacher || student). 1.0 is a guess.
+
 # ---- speed test ----
 TEST_EPOCH = 2
 TEST_EPOCH_WARMUP = 1
@@ -58,11 +68,21 @@ CATEGORIES = [""] + list("ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜabcdefghijklmnopqrstuv
 
 
 def make_cfg(epoch=EPOCH, epoch_warmup=EPOCH_WARMUP, work_dir=None, fold=FOLD,
-             arch_en=ARCH_EN, arch_de=ARCH_DE, device=DEVICE, multi_gpu=MULTI_GPU):
+             arch_en=ARCH_EN, arch_de=ARCH_DE, device=DEVICE, multi_gpu=MULTI_GPU,
+             kd=False):
     """Return the settings dict in the form REWI's main.py expects."""
     if work_dir is None:
-        work_dir = os.path.join(RESULTS_DIR, run_name(arch_en, arch_de))
+        work_dir = os.path.join(RESULTS_DIR, run_name(arch_en, arch_de, kd))
+    teacher_ckpt = os.path.join(
+        RESULTS_DIR, run_name(TEACHER_ARCH_EN, TEACHER_ARCH_DE), str(fold),
+        "checkpoints", f"{TEACHER_EPOCH}.pth",
+    ) if kd else None
     return {
+        "kd": kd,
+        "kd_weight": KD_WEIGHT,
+        "teacher_arch_en": TEACHER_ARCH_EN,
+        "teacher_arch_de": TEACHER_ARCH_DE,
+        "teacher_ckpt": teacher_ckpt,
         "arch_de": arch_de,
         "arch_en": arch_en,
         "aug": True,
@@ -91,14 +111,15 @@ def make_cfg(epoch=EPOCH, epoch_warmup=EPOCH_WARMUP, work_dir=None, fold=FOLD,
     }
 
 
-def get_cfg(run="e1", fold=FOLD, arch_de=None, device=None, multi_gpu=None, arch_en=None):
+def get_cfg(run="e1", fold=FOLD, arch_de=None, device=None, multi_gpu=None, arch_en=None, kd=False):
     """run = "e1" (real run) or "test" (2-epoch speed test); fold = 0..4.
-    arch_en, arch_de, device, multi_gpu: override the defaults above (None = keep default)."""
+    arch_en, arch_de, device, multi_gpu, kd: override the defaults above (None = keep default)."""
     extra = {
         "arch_en": arch_en or ARCH_EN,
         "arch_de": arch_de or ARCH_DE,
         "device": device or DEVICE,
         "multi_gpu": MULTI_GPU if multi_gpu is None else multi_gpu,
+        "kd": kd,
     }
     if run == "test":
         return make_cfg(TEST_EPOCH, TEST_EPOCH_WARMUP, TEST_WORK_DIR, fold, **extra)

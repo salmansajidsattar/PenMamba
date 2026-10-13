@@ -15,6 +15,7 @@ from rewi.ctc_decoder import BestPath
 from rewi.dataset import HRDataset
 from rewi.dataset.utils import fn_collate
 from rewi.evaluate import evaluate
+from rewi.kd import kd_loss
 from rewi.loss import CTCLoss
 from rewi.manager import RunManager
 from rewi.model import BaseModel
@@ -41,6 +42,8 @@ def train_one_epoch(
     lr_scheduler: torch.optim.lr_scheduler.SequentialLR,
     man: RunManager,
     epoch: int,
+    teacher: nn.Module | None = None,
+    kd_weight: float = 0.0,
 ) -> None:
     '''Train model for 1 epoch.
 
@@ -66,6 +69,13 @@ def train_one_epoch(
             loss = fn_loss(
                 out.permute((1, 0, 2)), y, len_x // model.ratio_ds, len_y
             )
+
+            if teacher is not None:  # distillation from the Base teacher
+                with torch.no_grad():
+                    out_teacher = teacher(x)
+                loss = loss + kd_weight * kd_loss(
+                    out, out_teacher, len_x // model.ratio_ds
+                )
 
         scaler.scale(loss).backward()
         scaler.step(optimizer)
@@ -256,6 +266,24 @@ def main(cfgs: argparse.Namespace) -> None:
 
         logger.info(f'Load checkpoint from {cfgs.checkpoint}')
 
+    # load the frozen Base teacher if distillation is on
+    teacher = None
+    if getattr(cfgs, 'kd', False):
+        teacher = BaseModel(
+            cfgs.teacher_arch_en,
+            cfgs.teacher_arch_de,
+            cfgs.num_channel,
+            len(cfgs.categories),
+            cfgs.len_seq,
+        ).to(cfgs.device)
+        teacher.load_state_dict(
+            torch.load(cfgs.teacher_ckpt, weights_only=False)['model']
+        )
+        teacher.eval()
+        for params in teacher.parameters():
+            params.requires_grad = False
+        logger.info(f'Teacher loaded from {cfgs.teacher_ckpt}')
+
     # use all GPUs for each batch if asked
     if getattr(cfgs, 'multi_gpu', False) and torch.cuda.device_count() > 1:
         model = DataParallelModel(model)
@@ -283,6 +311,8 @@ def main(cfgs: argparse.Namespace) -> None:
                 lr_scheduler,
                 manager,
                 e,
+                teacher,
+                getattr(cfgs, 'kd_weight', 0.0),
             )
             test(
                 dataloader_test,
@@ -334,6 +364,11 @@ if __name__ == '__main__':
         help='cuda, cuda:0 or cuda:1 (default: config.py).',
     )
     parser.add_argument(
+        '--kd',
+        action='store_true',
+        help='Distill from the Base teacher (needs its checkpoint, see config.py).',
+    )
+    parser.add_argument(
         '--multi-gpu',
         action='store_true',
         help='Split every batch over all GPUs.',
@@ -351,6 +386,7 @@ if __name__ == '__main__':
             args.device,
             True if args.multi_gpu else None,
             args.arch_en,
+            args.kd,
         )
 
     main(argparse.Namespace(**cfgs))
