@@ -59,6 +59,23 @@ python rewi/main.py --fold 0 --kd                    # Small student, distilled 
 
 Training already evaluates every 5 epochs. Results of all folds can be summarized with `evaluate.py`, as in the official repository.
 
+## What is from REWI and what is ours
+
+From REWI, unchanged: the training loop, dataset loading, augmentations, CTC loss and decoder, the convolutional encoder, the BiLSTM decoder and the evaluation code.
+
+Added or changed by us:
+
+- `rewi/config.py`: all run settings in one place.
+- `rewi/main.py`: small edits only. It reads `config.py`, and has the flags `--fold`, `--arch-en`, `--arch-de`, `--device`, `--multi-gpu` and `--kd`.
+- `rewi/rewi/model/mamba.py`: BiMamba block with a BiLSTM decoder (E2). It is our own pure PyTorch version of the selective state space idea from the Mamba paper.
+- `rewi/rewi/model/groups.py`: sensor-group experts with a gate (E3).
+- `rewi/rewi/kd.py`: distillation loss, Base teacher to Small student.
+- `make_rewi_data.py` and `data.py`: data conversion and a safe loader for the OnHW files.
+
+## Acknowledgments
+
+Thanks to the REWI authors (Jindong Li, Tim Hamann, Jens Barth, Peter Kaempf, Dario Zanca and Bjoern Eskofier) for releasing their code, and to the authors of the OnHW dataset (Fraunhofer IIS and STABILO). This work uses their code and data. If you use this repository, please cite their paper below.
+
 ## License
 
 This project is released under the MIT license. Please see the `LICENSE` file for more information.
